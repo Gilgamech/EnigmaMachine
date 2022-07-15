@@ -1,0 +1,174 @@
+{\rtf1\ansi\ansicpg1252\deff0\nouicompat\deflang1033{\fonttbl{\f0\fnil\fcharset0 Calibri;}}
+{\colortbl ;\red0\green0\blue255;}
+{\*\generator Riched20 10.0.22000}\viewkind4\uc1 
+\pard\sa200\sl276\slmult1\f0\fs22\lang9 Title: Gilgamech Technologies Builds The Enigma Machine\par
+\par
+0a\par
+To my remember Polish heritage, and because the Enigma machine is a popular historical landmark, I wanted honor to a great Pole, Marion Radjewski, who reverse engineered the Engima machine before the start of WW2. \par
+0b\par
+Oh, you thought Enimga was a WW2 technology? Nope, it was a WW1 technology.\par
+0c\par
+The cipher was too complex to perform by hand, requiring a machine to perform the work - one that would be durable enough to haul in a backpack, for use in the field. Upgrading from human-performable ciphers up to ciphers that require you to haul around a device unlock much more complex ciphers that would have been harder to crack, but instead of doing this, they continued to use the existing cipher from WW1.\par
+0d\par
+The work I'll be describing in this video was performed in Javascript. How hard was it? Pretty easy - about 75 lines of code in 4 functions. So let me take you on the fantastic voyage of its construction.\par
+1\par
+The keyboard \par
+Cipher wheels A, B, and C swap 2 letters like the front panel, but this wasn't changeable without disassembling the wheel. The wheels were removable, and each day you'd have a different set from the box of like 12 wheels. If you forgot to update your wheels in the morning, you'd only see scrambled messages.\par
+Wheel A's index is incremented with every 1 keystroke. \par
+Wheel B's index is the message index divided by 26, rounding down. \par
+Wheel C's index is likewise the message index divided by 26, rounding down, and this divided by 26, rounding down again. This increments only once every 676 letters, and so might only increment once or twice during the typical message.\par
+Wheel D was added midway through WW2, as an attempt to patch the defeated Enigma - which means both sides knew it was cracked. This meant replacing all of the 3-wheel Enigma machines with nearly-identical 4-wheel Enigma machines, instead of replacing this 25 year old encryption technology with a more complex and newer cipher. Was this because all cipher progress since WW1 had occurred in the Polish Cipher Bureau, and there were no recent German ciphers? Did Germany's ideology at the time create technological road blocks that led to them losing WW2?\par
+Wheel D would increment every 17576 letters, so likely never incremented, even on the longest of messages. To put it in perspective, a page holds about 1800 characters and spaces, so this is almost 10 pages. These messages were transmitted one letter at a time, telegraphed over radio waves in International Telegraph Code, similar to Morse Code. Before even decrypting the message, if you could interpret 1 letter per second, it would take almost 5 hours to receive a message that long. Much as Andrew S. Tanenbaum would later say, it would be faster to send this 10 page essay by military courier than telegraph.\par
+Since it never actually  spun, Wheel D could have been replaced with a different keyswapping mechanic, but using the Enigma Wheel form factor meant everyone could keep using the same box of like 12 wheels, instead of needing more patch cables or another device.\par
+Just like the extemporaneous wiring by the front patch cables, the internal wiring of the wheels connected each input connector with its own output connector. And just like we did for the front panel, we simulate that wiring with basically the same key and swap arrays. In this example, the 3 pairs of wheel key and swap arrays each consist of half an alphabet, but it should be possible to extend each of these to a full alphabet and increase the entropy somewhat.\par
+To do this in Javascript, the same function can be used for both the front panel and the hub, while the wheels need both a forward encryption function to simulate passing through the wheels toward the hub, and a reverse function to simulate passing back through the wheels after the hub. In Part 2 I'll demonstrate with a simplified model that - even though the individual parts are not reciprocal, they work together to form a reciprocal cipher.\par
+\par
+Enigma is a cipher, and in the late 1920s, Enigma machines were made by Berlin's Cipher Machine AG - think IBM, but cipher instead of business, and drop the international. \par
+\par
+\par
+\par
+\par
+They kinda did rebuild it for Colossus.\par
+\par
+{{\field{\*\fldinst{HYPERLINK https://www.nsa.gov/History/Cryptologic-History/Historical-Figures/Historical-Figures-View/Article/1621548/marian-rejewski/ }}{\fldrslt{https://www.nsa.gov/History/Cryptologic-History/Historical-Figures/Historical-Figures-View/Article/1621548/marian-rejewski/\ul0\cf0}}}}\f0\fs22\par
+(Trombone undertones)\par
+\par
+The keyboard wasn't the QWERTY that you probably have on your device - it's a QWERTZ, with P moved next to Z, and L moved down next to M, to move the 26 letters from a 10-9-8 pattern common for QWERTY keyboards into a 9-8-9 pattern. Then Y and Z were swapped.\par
+\par
+\tab\tab\tab\tab Image of keyboard\par
+\par
+The wheel ciphers are named based on the direction the message is going through the wheel - forward toward the hub, or reflected back through the wheels. The function names reflect their function:\par
+\par
+\tab\tab\tab\tab Image of enigmaMachine\par
+\par
+The front panel resembled a telephone switchboard, and manually swapped 2 letters. This is just like running replace on a string, but twice and using a swap character. The swap character here is a combination of symbols that's very rare to see together.\par
+\par
+\tab\tab\tab\tab Image of enigmaReciprocal\par
+\par
+\par
+Front panel is a reciprocal cipher, reversing roller is a hard-wired reciprocal cipher, and wheels are two-sided ciphers.\par
+\par
+\par
+(Drawing of wheels, drawing of cardboard box with wheels inside)\par
+Cipher wheels A, B, and C replace letters in a different way than the front panel or hub, which can't be changed without disassembling the wheel. The wheels were removable, and each day would have a different set of 3 wheels from the box of like 12 wheels. If you forgot to update your wheels in the morning, you'd only see scrambled messages.\par
+\par
+(Math illustrations)\par
+Wheel A's wheel modulus is the message index modulus 26, changing the modifier for every letter with every keypress. \par
+\tab\tab\tab\tab 27%26 = 1 (Long division illustration of modulus)\par
+You might know about the modulus - it performs long division, take the remainder, and throws the rest in the trash.\par
+Wheel B's wheel modulus is the message index divided by 26, rounded down - changing the letter with every cycle of Wheel A. \par
+\tab\tab\tab\tab Math.floor(27/26) = 1\par
+Wheel C's wheel modulus is likewise message index divided by 26, rounded down, then divided by 26 and rounded down again. \par
+\tab\tab\tab\tab Math.floor(Math.floor(676/26)/26) = 1\par
+The reversing roller was very similar to the front panels, but wasn't modifyable.\par
+\par
+Then revert the process of Wheels C, B, and A - followed by reverting the front panel. \par
+\par
+\tab\tab\tab\tab (Image of enigmaReciprocal)\par
+To build this in Javascript, the same function could be used foreach of the ciphers, and the reversion function could be used foreach of the reversions. Just change the input alphabet. Since this function could take up to 13 characters, the sets of characters to swap are represented by 2 equal-length arrays: keyArray and swapArray. The first letter in keyArray will swap with the first in swapArray, and so forth.\par
+\par
+\par
+\par
+If it were used in WW1, then it was used unsuccessfully, as Germany lost badly and had to pay steep reparations - which was a main cause for WW2. So the cipher was either cracked before it was used, or was never effectively used. Why did NSGermany use it? Probably due to their irrational like for creations made by people with a specific skin pigmentation blinding them to these operational issues.\par
+\par
+\par
+Title card: Part 2 - Wheel Boogaloo.\par
+\par
+Even though the wheel forward and reverse functions are not reciprocal, the overall process *is* reciprocal. This allows a standard machine configuration to be declared, and the same settings to encrypt and decrypt all messages, very useful for military uniformity. To demonstrate this, we start with a simplified model, where the message will be passed through an empty front panel, one wheel forward, the hub, one wheel reverse, and the empty panel again:\par
+\par
+\par
+This is a correction to my Feburary 16th blog post, where I believed the same reciprocal function could work foreach of these, until I had constructed it. This works because the forward step of the decryption cycle decrypts the reverse step from the encryption cycle, and likewise the reverse step of the decryption cycle decrypts the forward step of the encryption cycle. \par
+\par
+(Intermission)\par
+Interlude - Running Man Cipher.\par
+Enigma requires a key in the form of the wheels-of-the-day and their specific settings for this transmission, along with the front panel settings. These were sent in the first 12 characters of a message, aiding decryptors. \par
+However, using both Running Key and my Inverse Running key will encrypt both halves of a message - first half first, then the last half, because that's how my function was written. This allows for keyless encryption, since the message is encrypted with itself.\par
+\par
+Running Key uses the first half of the \par
+\par
+\par
+Part 3 - Be Kind, Rewind.\par
+Here is a breakdown of the rewritten functions. The message goes through enigmaForward on the first pass, then enigmaReverse on the second.\par
+\par
+enigmaForward\par
+This function starts much like the rest - uppercase the input string. Also grab the key array length since it's used often. These are using the keyArrays and swapArrays defined in yesterday's blog.\par
+Foreach letter in the message, determine the indexAdvance (Enigma's secret sauce) by dividing the index by the wheelModulus - this will be 1 (every key) for Wheel A, 26 (every alphabet) for Wheel B, and 676 (every 26 alphabets) for Wheel C. This This handles the reciprocation - if it's not in the keyArray, it's in the swapArray.\par
+Replace the current letter by building a new string: the old string before the current letter, the output variable, and then the old string after the current letter.\par
+\par
+\tab\tab\tab\tab enigmaForward.png\par
+\par
+enigmaReverse\par
+This function is nearly identical to enigmaForward - indeed, a quality developer likely could unify these into a single function.\par
+The indexAdvance here is a little more complex - it has to handle rolling backwards without providing a negative result. This equation ends with the dividing the index by the wheelModulus, but subtracted. Before that is a way of "stacking more key loops" onto the key, so there are more than enough to subtract. For Wheel A, this number will be as long as the message length, which could be hundreds or thousands of letters long.\par
+Same setup before and same reciprocation after. Moving the indexAdvance math up above allows for an identical section here.\par
+\par
+\par
+\tab\tab\tab\tab EnigmaReverse.png\par
+\par
+\par
+\tab\tab var indexAdvance = Math.floor(index/wheelModulus);\par
+\par
+\par
+Part 4 - A Sprial Inside A Circle, A Wheel Inside A Wheel.\par
+\par
+To stack these up, we're going to nest enigmaReciprocal inside itself 9 times, using 5 different keys:\par
+\par
+Reciprocal Front Panel cipher: enigmaReciprocal using the static Front Panel keyArray and swapArray.\par
+Forward Wheel A cipher: enigmaForward using the rotating Wheel A keyArray and swapArray.\par
+Forward Wheel B cipher: enigmaForward using the rotating Wheel B keyArray and swapArray.\par
+Forward Wheel C cipher: enigmaForward using the rotating Wheel C keyArray and swapArray.\par
+Reciprocal reversing roller cipher: enigmaReciprocal using the static reversing roller keyArray and swapArray.\par
+Reverse Wheel C cipher: enigmaReverse using the rotating Wheel C keyArray and swapArray.\par
+Reverse Wheel B cipher: enigmaReverse using the rotating Wheel B keyArray and swapArray.\par
+Reverse Wheel A cipher: enigmaReverse using the rotating Wheel A keyArray and swapArray.\par
+Reciprocal Front Panel cipher: enigmaReciprocal using the static Front Panel keyArray and swapArray.\par
+\par
+Arrays:\par
+- Front Panel\par
+- Wheel A\par
+- Wheel B\par
+- Wheel C\par
+- Hub\par
+Main Event:\par
+\par
+(Describe going through this)\par
+(Drawing of banana plugs inside front panel)\par
+\par
+\par
+So how was Enigma cracked? I don't have all of the details, but the first step is detection. Enigma is a pseudo-random cipher, which looks like you're telegraphing gibberish. But why would you pay someone to telegraph gibberish? So every bit of "gibberish" that German soldiers transmitted was obviously an enciphered message. Marion created a new algebraic codebreaking technique to demodulate these messages and get at the transmission inside. It's sad that Poland couldn't withstand a double-invasion and fell first, but NSGermany's overwhelming brutality scared even the most brutal dictator of the 20th century - Josef Stalin - into swapping sides to the Allies, as he realized NSGermany might actually eventually succeed in taking his frozen empire. \par
+Modulating by alphabets (26) was a central part of early cryptology, and so the algebraic decryption method likely operated around modulating and demodulating the cipher around the number 26.\par
+\par
+\par
+Part 5 - Enigma Man.\par
+\par
+To cap off this enigmatic journey, here is Enigma Man, a cipher which performs my Running Man cipher 9 times:\par
+\par
+This cipher ran 9 times is probably more secure than the 9 ciphers in Enigma, plus no key is required, just the message. Indeed, the number of encryption rotations could be viewed as a type of key. It's more secure because adding or removing a pair of letters from the end of the message changes the entire encrypted output, since removing letters shifts the midpoint of the message, which moves the first letter of the key. A downside is that message length must be even or lose a character.\par
+\par
+A downside to Running Man is that the message has to be split in half, either by the human transmitting the message, or the encrypting device has to be sophisticated enough to store the entire message and perform the whole process, which wasn't feasible with the state of the art of computation at the time.\par
+\par
+Enigma was somewhat overengineered on the encryption side, but was a nifty application-specific mechanical computer. The faulty philosophy of "nobody could reverse engineer something this overengineered" ignored Polish ingenuity after World War 1. \par
+\par
+Morse made the Telegraph, and so Morse Code was telegraph code. There was American and International. {{\field{\*\fldinst{HYPERLINK https://en.wikipedia.org/wiki/Telegraph_code }}{\fldrslt{https://en.wikipedia.org/wiki/Telegraph_code\ul0\cf0}}}}\f0\fs22\par
+\par
+The Enigma machine was a "Glow lamp cipher machine". This device was necessary because Enigma is too complex for humans to perform on realistic timescales. It was a simplified version of the "Trade Machine" printed Enigma machine they made in 1923, which was smaller for better mobile (military) use. The tradeoff was that this device couldn't type out the translations onto paper, and instead used a panel with 26 lightbulbs to  display the message. (What happened if a lightbulb went out? Did they have to carry a box of spares? These would be filament bulbs in this pre-LED era, which were sensitive to vibration.)\par
+- Enigma-A made by Berlin's Cipher Machine AG in 1924 had just 2 settable wheels and the static reversing roller. Instead of using the keyboard press to mechanically move the cipher wheels forward, a separate drive button performed this task.\par
+- The Swedish General Staff (SGS) tested both the Trade Machine and Enigma-A, and requested some improvements: a Test All Lamps function, printed letters on panel and keyboard, bright letters with a dark background for the panel, move the drive button to the left side (why?), upgrade from 26 alphabet characters to at least 40 characters (including numbers and punctuation), and upgrade the 2-wheel Enigma-A to 4 wheels (like the Trade Machine). These upgrades were made in Enigma-B, which originally did have 4 moving wheels, as the reversing roller was moveable. Later Enigma-B models had a fixed reversing roller.\par
+- Hard to find manuals, and they weren't very good because the machine was simple to operate. And there were several nearly-identical models.\par
+- Marion got the German manual from French Intel, who bought it from German spy named Hans-Thilo Schmidt. \par
+- Marion and bureau had a working Enigma-K (Commercial) machine, which had the same 3 removable wheels and rolling reflector as the German Army's Enigma-C. Marion guessed the German Army would percieve not randomizing the wheel order as a benefit, and indeed putting the wheels in alphabetical order let them read some German transmissions. Cipher Machine AG could make custom wheels for customers who ordered them, but the German Army had merely ordered the default wheels.\par
+- Even if they had figured out the German and Russian plans to double-team Poland, the Polish military wasn't able to withstand a war on 2 fronts and the nation sadly fell. In this pre-UN age, there was no higher governmental power to appal to or request aid from. The USA saw WW2 as a regional conflict, like WW1, and many US Americans wanted to stay out of the war - until Japan requested that we join. \par
+- Near the end of WW2, the German Army upgraded from Enigma-C machines to Enigma -D, which had a changeable reversing roller which resembled a wheel, but couldn't move. This is why most videos on Enigma machines say they upgraded from 3 wheels to 4, even though the 4th wheel would never realistically rotate.\par
+{{\field{\*\fldinst{HYPERLINK https://cryptomuseum.com/crypto/enigma/d/index.htm }}{\fldrslt{https://cryptomuseum.com/crypto/enigma/d/index.htm\ul0\cf0}}}}\f0\fs22\par
+{{\field{\*\fldinst{HYPERLINK https://gkaccess.com/how-the-enigma-cipher-was-hacked-in-world-war-2/ }}{\fldrslt{https://gkaccess.com/how-the-enigma-cipher-was-hacked-in-world-war-2/\ul0\cf0}}}}\f0\fs22\par
+\par
+\par
+\par
+\par
+\par
+\par
+\par
+\par
+\par
+}
+ 

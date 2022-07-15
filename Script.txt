@@ -1,0 +1,154 @@
+Title: 
+
+To honor my Polish heritage, and because Enigma Machine videos are so popular, I wanted to honor a great Pole, Marion Rodjewski, in reverse engineering the Enigma Machine in Javascript. How hard was it? Pretty easy - about 75 lines of code in 4 functions. So let me take you on the fantastic voyage of its construction.
+
+(I really hope these images are public domain.)
+
+Part 1: Days of Future Past
+
+(Get free to use string quartet music from somewhere)
+
+(Get Enigma machine art from somewhere)
+The Enigma machine was a pseudo-random series of key-swap ciphers. How it's put together
+
+The keyboard wasn't the QWERTY that you probably have on your device - it's a QWERTZ, with P moved next to Z, and L moved down next to M, to move the 26 letters from a 10-9-8 pattern common for QWERTY keyboards into a 9-8-9 pattern. Then Y and Z were swapped.
+
+				Input from keyboard
+				Reciprocal Front Panel
+				Forward Wheel A cipher
+				Forward Wheel B cipher
+				Forward Wheel C cipher
+				Reciprocal Hub cipher
+				Reverse Wheel C cipher
+				Reverse Wheel B cipher
+				Reverse Wheel A cipher
+				Reciprocal Front Panel
+				Output to light panel
+	
+The wheel ciphers are named based on the direction the message is going through the wheel - forward toward the hub, or reflected back through the wheels. The function names reflect their function:
+
+				Image of enigmaMachine
+
+The front panel resembled a telephone switchboard, and manually swapped 2 letters. This is just like running replace on a string, but twice and using a swap character. The swap character here is a combination of symbols that's very rare to see together.
+
+				(Image of enigmaReciprocal)
+
+
+
+Front panel is a reciprocal cipher, hub is a hard-wired reciprocal cipher, and wheels are two-sided ciphers.
+
+
+(Drawing of wheels, drawing of cardboard box with wheels inside)
+Cipher wheels A, B, and C replace letters in a different way than the front panel or hub, which can't be changed without disassembling the wheel. The wheels were removable, and each day would have a different set of 3 wheels from the box of like 12 wheels. If you forgot to update your wheels in the morning, you'd only see scrambled messages.
+
+(Math illustrations)
+Wheel A's wheel modulus is the message index modulus 26, changing the modifier for every letter with every keypress. 
+				27%26 = 1 (Long division illustration of modulus)
+You might know about the modulus - it performs long division, take the remainder, and throws the rest in the trash.
+Wheel B's wheel modulus is the message index divided by 26, rounded down - changing the letter with every cycle of Wheel A. 
+				Math.floor(27/26) = 1
+Wheel C's wheel modulus is likewise message index divided by 26, rounded down, then divided by 26 and rounded down again. 
+				Math.floor(Math.floor(676/26)/26) = 1
+The Hub was very similar to the front panels, but wasn't modifyable.
+
+Then revert the process of Wheels C, B, and A - followed by reverting the front panel. 
+
+				(Image of enigmaReciprocal)
+To build this in Javascript, the same function could be used foreach of the ciphers, and the reversion function could be used foreach of the reversions. Just change the input alphabet. Since this function could take up to 13 characters, the sets of characters to swap are represented by 2 equal-length arrays: keyArray and swapArray. The first letter in keyArray will swap with the first in swapArray, and so forth.
+
+
+
+
+
+
+Title card: Part 2 - Wheel Boogaloo.
+
+Even though the wheel forward and reverse functions are not reciprocal, the overall process *is* reciprocal. This allows a standard machine configuration to be declared, and the same settings to encrypt and decrypt all messages, very useful for military uniformity. To demonstrate this, we start with a simplified model, where the message will be passed through an empty front panel, one wheel forward, the hub, one wheel reverse, and the empty panel again:
+
+
+				> enigmaForward("CATJAR",wheelAKeyArray,wheelASwapArray,1)
+				'HHCHVU'
+				> enigmaReciprocal('HHCHVU',hubKeyArray,hubSwapArray)
+				'UUPUIH'
+				> enigmaReverse('UUPUIH',wheelAKeyArray,wheelASwapArray,1)
+				'QHCTMD'
+
+				> enigmaForward("QHCTMD",wheelAKeyArray,wheelASwapArray,1)
+				'UUPUIH'
+				> enigmaReciprocal('UUPUIH',hubKeyArray,hubSwapArray)
+				HHCHVU
+				> enigmaReverse("HHCHVU",wheelAKeyArray,wheelASwapArray,1)
+				CATJAR
+
+This is a correction to my Feburary 16th blog post, where I believed the same reciprocal function could work foreach of these, until I had constructed it. This works because the forward step of the decryption cycle decrypts the reverse step from the encryption cycle, and likewise the reverse step of the decryption cycle decrypts the forward step of the encryption cycle. 
+
+
+(Intermission)
+Interlude - Running Man Cipher.
+Using both Running Key and my Inverse Running key will encrypt both halves of a message - first the last half with the first, then the first half with the last. Err...this will encrypt the first half first, then the last half, because that's how my function was written. This allows for keyless encryption, since the message is encrypted with itself.
+
+
+
+
+Part 3 - Be Kind, Rewind.
+Here is a breakdown of the rewritten functions. The message goes through enigmaForward on the first pass, then enigmaReverse on the second.
+
+enigmaForward
+This function starts much like the rest - uppercase the input string. Also grab the key array length since it's used often. These are using the keyArrays and swapArrays defined in yesterday's blog.
+Foreach letter in the message, determine the indexAdvance (Enigma's secret sauce) by dividing the index by the wheelModulus - this will be 1 (every key) for Wheel A, 26 (every alphabet) for Wheel B, and 676 (every 26 alphabets) for Wheel C. This This handles the reciprocation - if it's not in the keyArray, it's in the swapArray.
+Replace the current letter by building a new string: the old string before the current letter, the output variable, and then the old string after the current letter.
+
+				enigmaForward.png
+
+enigmaReverse
+This function is nearly identical to enigmaForward - indeed, a quality developer likely could unify these into a single function.
+The indexAdvance here is a little more complex - it has to handle rolling backwards without providing a negative result. This equation ends with the dividing the index by the wheelModulus, but subtracted. Before that is a way of "stacking more key loops" onto the key, so there are more than enough to subtract. For Wheel A, this number will be as long as the message length, which could be hundreds or thousands of letters long.
+Same setup before and same reciprocation after. Moving the indexAdvance math up above allows for an identical section here.
+
+
+				EnigmaReverse.png
+
+
+		var indexAdvance = Math.floor(index/wheelModulus);
+		
+
+
+Part 4 - A Sprial Inside A Circle, A Wheel Inside A Wheel.
+
+To stack these up, we're going to nest enigmaReciprocal inside itself 9 times, using 5 different keys:
+
+Reciprocal Front Panel cipher: enigmaReciprocal using the static Front Panel keyArray and swapArray.
+Forward Wheel A cipher: enigmaForward using the rotating Wheel A keyArray and swapArray.
+Forward Wheel B cipher: enigmaForward using the rotating Wheel B keyArray and swapArray.
+Forward Wheel C cipher: enigmaForward using the rotating Wheel C keyArray and swapArray.
+Reciprocal Hub cipher: enigmaReciprocal using the static Hub keyArray and swapArray.
+Reverse Wheel C cipher: enigmaReverse using the rotating Wheel C keyArray and swapArray.
+Reverse Wheel B cipher: enigmaReverse using the rotating Wheel B keyArray and swapArray.
+Reverse Wheel A cipher: enigmaReverse using the rotating Wheel A keyArray and swapArray.
+Reciprocal Front Panel cipher: enigmaReciprocal using the static Front Panel keyArray and swapArray.
+
+Arrays:
+- Front Panel
+- Wheel A
+- Wheel B
+- Wheel C
+- Hub
+Main Event:
+
+
+
+Part 5 - Enigma Man.
+
+To cap off this enigmatic journey, here is Enigma Man, a cipher which performs my Running Man cipher 9 times:
+
+This cipher ran 9 times is probably more secure than the 9 ciphers in Enigma, plus no key is required, just the message. Indeed, the number of encryption rotations could be viewed as a type of key. It's more secure because adding or removing a pair of letters from the end of the message changes the entire encrypted output, since removing letters shifts the midpoint of the message, which moves the first letter of the key. A downside is that message length must be even or lose a character.
+
+Enigma was somewhat overengineered on the encryption side, but was a nifty application-specific mechanical computer. The faulty philosophy of "nobody could reverse engineer something this overengineered" ignored Polish ingenuity after World War 1. Oh, you thought Enigma was designed for World War 2?
+
+
+
+
+
+
+
+
